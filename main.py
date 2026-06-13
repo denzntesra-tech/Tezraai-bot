@@ -32,7 +32,8 @@ def webhook():
     }
 
     response = requests.post(WHAPI_URL, json=payload, headers=headers)
-
+    print("Chat ID:", chat_id) # 1. Whapi hnena i thawn number
+    print("Whapi status:", response.status_code, response.text) # 2. Error en nan
     return jsonify({'status': 'sent', 'whapi_status': response.status_code}), 200
 
 if __name__ == '__main__':
