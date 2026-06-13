@@ -17,13 +17,15 @@ def webhook():
     message = data['messages'][0]
     chat_id = message.get('chat_id')
     text = message.get('text', {}).get('body', '')
-
+    # Bot in a reply ngei chu ignore rawh - loop tih tawp nan
+    if text.startswith('Echo:'):
+        return jsonify({'status': 'ignored'}), 200
     if not chat_id or not text:
         return jsonify({'status': 'missing chat_id or text'}), 200
 
     payload = {
-        'to': chat_id,
-        'body': text
+    'phone': chat_id.split('@')[0], # @s.whatsapp.net tel lo
+    'body': f'Echo: {text}' # Echo: belh
     }
 
     headers = {
