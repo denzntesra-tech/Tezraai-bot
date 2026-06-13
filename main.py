@@ -24,8 +24,8 @@ def webhook():
         return jsonify({'status': 'missing chat_id or text'}), 200
 
     payload = {
-    'phone': chat_id.split('@')[0], # @s.whatsapp.net tel lo
-    'body': f'Echo: {text}' # Echo: belh
+    'to': chat_id, # phone ai ah 'to' kan hmang leh
+    'body': f'Echo: {text}'
     }
 
     headers = {
