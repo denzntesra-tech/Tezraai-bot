@@ -116,25 +116,29 @@ def webhook():
     else:
         message = data
 
-    # LOOP TIHTAWP - 1. Keimahni reply chu ignore - A him zawk
-    if str(message.get("from_me")).lower() == "true":
-        return jsonify({"status": "ignored", "reason": "Kei mahni reply"})
+    # Message text la chhuah dan - dict leh string a inhawng lo turin
+    raw_body = message.get("body", "") or message.get("text", "")
 
-        msg_body = message.get("body", "") or message.get("text", "")
-    # Message body chu dict a nih chuan text la chhuak rawh
-    if isinstance(msg_body, dict):
-        msg_body = msg_body.get('text', {}).get('body', '')
+    # Dict a nih chuan text body la chhuak rawh
+    if isinstance(raw_body, dict):
+        raw_body = raw_body.get('text', {}).get('body', '')
 
-    msg_body_lower = msg_body.lower().strip()
-
-    # LOOP TIHTAWP - 2. Echo: leh Ka dawng e: chu ignore hmasa ber
-    if msg_body_lower.startswith("echo:") or msg_body_lower.startswith("ka dawng e:"):
-        return jsonify({"status": "ignored", "reason": "Echo/Loop message"})
-
+    msg_body = raw_body
+    msg_body_lower = raw_body.lower().strip()
     sender = message.get("from", "") or message.get("chat_id", "")
 
     if not msg_body or not sender:
-        return jsonify({"status": "ignored", "reason": "Data incomplete"})
+        return jsonify({"status": "ignored", "reason": "Data incomplete"}), 200
+
+    # LOOP TIHTAWP - 1. Keimahni reply chu ignore
+    if str(message.get("from_me")).lower() == "true":
+        return jsonify({"status": "ignored", "reason": "Kei mahni reply"}), 200
+
+    # LOOP TIHTAWP - 2. Echo: leh Ka dawng e: chu ignore hmasa ber
+    if msg_body_lower.startswith("echo:") or msg_body_lower.startswith("ka dawng e:"):
+        return jsonify({"status": "ignored", "reason": "Echo/Loop message"}), 200
+    
+
 
     # Process leh reply
     reply_text = get_mizo_reply(msg_body)
