@@ -24,8 +24,8 @@ def webhook():
         return jsonify({'status': 'missing chat_id or text'}), 200
 
     payload = {
-    'to': chat_id, # phone ai ah 'to' kan hmang leh
-    'body': f'Echo: {text}'
+    'to': chat_id,
+    'body': f"Ka dawng e: {text}"  # he lai hi reply tur
     }
 
     headers = {
