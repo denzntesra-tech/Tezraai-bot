@@ -121,7 +121,11 @@ def webhook():
         return jsonify({"status": "ignored", "reason": "Kei mahni reply"})
 
     msg_body = message.get("body", "") or message.get("text", "")
-    msg_body_lower = msg_body.lower().strip()
+    # Message body chu dict a nih chuan text la chhuak rawh
+if isinstance(msg_body, dict):
+    msg_body = msg_body.get('text', {}).get('body', '')
+
+msg_body_lower = msg_body.lower().strip()
 
     # LOOP TIHTAWP - 2. Echo: leh Ka dawng e: chu ignore hmasa ber
     if msg_body_lower.startswith("echo:") or msg_body_lower.startswith("ka dawng e:"):
