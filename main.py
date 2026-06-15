@@ -126,6 +126,7 @@ def webhook():
     msg_body = raw_body
     msg_body_lower = raw_body.lower().strip()
     sender = message.get("from", "") or message.get("chat_id", "")
+    sender = sender.replace("@c.us", "").replace("@s.whatsapp.net", "")  # He line 1 hi belh chiah rawh
 
     if not msg_body or not sender:
         return jsonify({"status": "ignored", "reason": "Data incomplete"}), 200
