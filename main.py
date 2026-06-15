@@ -24,23 +24,29 @@ BOT_STATUS = True # Bot on/off switch
 
 # ==================== FUNCTIONS ====================
 def send_whapi_message(to, text):
-    """Whapi hmangin message thawnna"""
     headers = {
         "Authorization": f"Bearer {WHAPI_TOKEN}",
         "Content-Type": "application/json"
     }
     payload = {
-    "to": to, 
-    "channel": "NIGHTW-UUDK3",  # Hei hi belh rawh
-    "text": {"body": text}      # "body" ai ah hetiang hian siam bawk
+        "to": to,
+        "channel": "NIGHTW-UUDK3", 
+        "text": {"body": text}
     }
+    
+    logger.info(f"Thawn tum: {to} | Text: {text}")  # Log belh
+    
     try:
         response = requests.post(WHAPI_URL, headers=headers, json=payload, timeout=10)
+        logger.info(f"Whapi Status: {response.status_code}")  # Status code log
+        logger.info(f"Whapi Body: {response.text}")  # Error chhan tak log
+        
         response.raise_for_status()
         logger.info(f"Message thawnchhuah: {to}")
         return response.json()
     except requests.exceptions.RequestException as e:
         logger.error(f"Thawn a tlawk lo: {e}")
+        logger.error(f"Whapi Error Body: {response.text if 'response' in locals() else 'No response'}")
         return None
 
 def get_mizo_reply(msg):
