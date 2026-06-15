@@ -29,7 +29,11 @@ def send_whapi_message(to, text):
         "Authorization": f"Bearer {WHAPI_TOKEN}",
         "Content-Type": "application/json"
     }
-    payload = {"to": to, "body": text}
+    payload = {
+    "to": to, 
+    "channel": "NIGHTW-UUDK3",  # Hei hi belh rawh
+    "text": {"body": text}      # "body" ai ah hetiang hian siam bawk
+    }
     try:
         response = requests.post(WHAPI_URL, headers=headers, json=payload, timeout=10)
         response.raise_for_status()
