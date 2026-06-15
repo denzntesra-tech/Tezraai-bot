@@ -87,14 +87,13 @@ def verify_webhook():
         logger.info("Webhook verified")
         return challenge, 200
     return "Forbidden", 403
-
-@app.route('/on', methods=['POST'])
+    
+@app.route('/on', methods=['GET', 'POST'])
 def bot_on():
     global BOT_STATUS
     BOT_STATUS = True
-    logger.info("Bot ON")
+    logger.info("Bot ON - Status: True")
     return jsonify({"status": "ON", "message": "Bot chhuak leh ta e ✅"})
-
 @app.route('/off', methods=['POST'])
 def bot_off():
     global BOT_STATUS
