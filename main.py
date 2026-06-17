@@ -140,12 +140,14 @@ def webhook():
         raw_body = raw_body.get('text', {}).get('body', '')
 
     msg_body = raw_body
-    msg_body_lower = raw_body.lower().strip()
-    sender = message.get("from", "") or message.get("chat_id", "")
+    msg_body_lower = raw_body.lower().strip() 
+    sender = message.get("from", "") or message.get("chatId", "") or message.get("chat_id", "")
     sender = str(sender).replace("@s.whatsapp.net", "").replace("@c.us", "").replace("+", "")
 
-    if not msg_body or not sender:
-        return jsonify({"status": "ignored", "reason": "Data incomplete"}), 200
+    logger.info(f"DEBUG sender: {sender} | msg: {msg_body}")
+if not msg_body or not sender:
+    logger.info("Sender or msg ruak, tawp.")
+    return jsonify({"status": "ignored"}), 200
 
     # LOOP TIHTAWP - 1. Keimahni reply chu ignore
     if str(message.get("from_me")).lower() == "true":
