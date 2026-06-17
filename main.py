@@ -24,31 +24,39 @@ BOT_STATUS = True # Bot on/off switch
 
 # ==================== FUNCTIONS ====================
 def send_whapi_message(to, text):
+    if "@s.whatsapp.net" not in str(to):
+        to = f"{to}@s.whatsapp.net"
+    
     headers = {
         "Authorization": f"Bearer {WHAPI_TOKEN}",
         "Content-Type": "application/json"
     }
+    
     payload = {
         "to": to,
-        "channel": "NIGHTW-UUDK3", 
-        "text": {"body": text}
+        "body": text
     }
     
-    logger.info(f"Thawn tum: {to} | Text: {text}")  # Log belh
+    logger.info(f"Thawn tum: {to} | Text: {text}")
     
     try:
         response = requests.post(WHAPI_URL, headers=headers, json=payload, timeout=10)
-        logger.info(f"Whapi Status: {response.status_code}")  # Status code log
-        logger.info(f"Whapi Body: {response.text}")  # Error chhan tak log
+        logger.info(f"Whapi Status: {response.status_code}")
+        logger.info(f"Whapi Body: {response.text}")
         
-        response.raise_for_status()
-        logger.info(f"Message thawnchhuah: {to}")
-        return response.json()
+        result = response.json()
+        if result.get("sent") == True:
+            logger.info(f"Message thawnchhuah: {to}")
+            return result
+        else:
+            logger.error(f"Whapi in a reject: {result}")
+            return None
+            
     except requests.exceptions.RequestException as e:
         logger.error(f"Thawn a tlawk lo: {e}")
         logger.error(f"Whapi Error Body: {response.text if 'response' in locals() else 'No response'}")
         return None
-
+        
 def get_mizo_reply(msg):
     """Mizo tawng in auto reply siamna - Pricing V4.3"""
     msg_lower = msg.lower().strip()
