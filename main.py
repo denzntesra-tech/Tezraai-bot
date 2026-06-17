@@ -24,8 +24,8 @@ BOT_STATUS = True # Bot on/off switch
 
 # ==================== FUNCTIONS ====================
 def send_whapi_message(to, text):
-    if "@s.whatsapp.net" not in str(to):
-        to = f"{to}@s.whatsapp.net"
+    # Whapi duh dan: number ringawt, + leh @s.whatsapp.net tel lo
+    to = str(to).replace("@s.whatsapp.net", "").replace("@c.us", "").replace("+", "")
     
     headers = {
         "Authorization": f"Bearer {WHAPI_TOKEN}",
@@ -33,7 +33,7 @@ def send_whapi_message(to, text):
     }
     
     payload = {
-        "to": to,
+        "to": to,  # 9191xxxxxxx ringawt a ni tawh ang
         "body": text
     }
     
@@ -42,7 +42,7 @@ def send_whapi_message(to, text):
     try:
         response = requests.post(WHAPI_URL, headers=headers, json=payload, timeout=10)
         logger.info(f"Whapi Status: {response.status_code}")
-        logger.info(f"Whapi Body: {response.text}")
+        logger.info(f"Whapi Body: {response.text}")  # Hei hi en rawh
         
         result = response.json()
         if result.get("sent") == True:
@@ -54,7 +54,6 @@ def send_whapi_message(to, text):
             
     except requests.exceptions.RequestException as e:
         logger.error(f"Thawn a tlawk lo: {e}")
-        logger.error(f"Whapi Error Body: {response.text if 'response' in locals() else 'No response'}")
         return None
         
 def get_mizo_reply(msg):
@@ -143,7 +142,7 @@ def webhook():
     msg_body = raw_body
     msg_body_lower = raw_body.lower().strip()
     sender = message.get("from", "") or message.get("chat_id", "")
-    sender = sender.replace("@c.us", "").replace("@s.whatsapp.net", "")  # He line 1 hi belh chiah rawh
+    sender = str(sender).replace("@s.whatsapp.net", "").replace("@c.us", "").replace("+", "")
 
     if not msg_body or not sender:
         return jsonify({"status": "ignored", "reason": "Data incomplete"}), 200
