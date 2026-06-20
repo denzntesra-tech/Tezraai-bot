@@ -5,13 +5,12 @@ import logging
 from dotenv import load_dotenv
 load_dotenv()
 
-# Logging setup
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# ==================== CONFIG ====================
+# ================= CONFIG =================
 WHAPI_TOKEN = os.environ.get("WHAPI_TOKEN")
 WHAPI_URL = "https://gate.whapi.cloud/messages/text"
 PORT = int(os.environ.get("PORT", 8080))
@@ -20,30 +19,30 @@ VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN", "mizo_bot_2024")
 if not WHAPI_TOKEN:
     raise ValueError("WHAPI_TOKEN environment variable required!")
 
-BOT_STATUS = True # Bot on/off switch
+BOT_STATUS = True
 
-# ==================== FUNCTIONS ====================
+# ================= FUNCTIONS =================
 def send_whapi_message(to, text):
     # Whapi duh dan: number ringawt, + leh @s.whatsapp.net tel lo
     to = str(to).replace("@s.whatsapp.net", "").replace("@c.us", "").replace("+", "")
-    
+
     headers = {
         "Authorization": f"Bearer {WHAPI_TOKEN}",
         "Content-Type": "application/json"
     }
-    
+
     payload = {
-        "to": to,  # 9191xxxxxxx ringawt a ni tawh ang
+        "to": to,
         "body": text
     }
-    
+
     logger.info(f"Thawn tum: {to} | Text: {text}")
-    
+
     try:
         response = requests.post(WHAPI_URL, headers=headers, json=payload, timeout=10)
         logger.info(f"Whapi Status: {response.status_code}")
-        logger.info(f"Whapi Body: {response.text}")  # Hei hi en rawh
-        
+        logger.info(f"Whapi Body: {response.text}")
+
         result = response.json()
         if result.get("sent") == True:
             logger.info(f"Message thawnchhuah: {to}")
@@ -51,40 +50,39 @@ def send_whapi_message(to, text):
         else:
             logger.error(f"Whapi in a reject: {result}")
             return None
-            
+
     except requests.exceptions.RequestException as e:
         logger.error(f"Thawn a tlawk lo: {e}")
         return None
-        
+
 def get_mizo_reply(msg):
     """Mizo tawng in auto reply siamna - Pricing V4.3"""
     msg_lower = msg.lower().strip()
 
     if msg_lower in ["hi", "chibai", "hello"]:
-        return "Chibai le 🙏 Eng nge ka puih ang che?\n\n*Commands:*\n• price/man - Dawrkai man enna\n• grammar - Grammar diktanna"
+        return "Chibai le 🙏 Eng nge ka puih ang che?\n\n*Commands:*\n• price/man - Dawrkai man enna\n• grammar - Grammar dikna"
 
     elif msg_lower in ["price", "man", "man enna"]:
         return """*TESRA DAWRKAI BOT MAN - THLA TIN* 💰
 
-*1. BASIC - ₹399/thla*
-Auto Reply chauh. Hman chhin nan
+• BASIC - ₹399/thla
+Reply chauh. Hman chhin nan
 
-*2. STARTER - ₹799/thla* ⭐ *Tam ber in an hmang*
-Auto Reply + Reminder + Zan Order + Sheet. Dawrkai tan a tawk
+• STARTER - ₹799/thla* ⭐ *Tam ber in an hmang*
+Reply + Reminder + Zan Order + Sheet. Dawrkai tan a tawk
 
-*3. PRO - ₹1299/thla* 🔥
+• PRO - ₹1299/thla* 🔥
 Voice + Customer hriatna + VIP Support. Dawr lian tan
 
-*Mahse* tun thla sign up hmasa 10 tan chuan Starter kha ₹599/thla chauh in ka pe ang che ✅
-I tan Option 2 hi a tawk ber ang em?"""
+*Offer:* Tun thla sign up hmasa 10 tan Starter kha ₹599/thla chauh in ka pe ang che ✅"""
 
     elif msg_lower == "grammar":
-        return "📝 *Mizo Grammar Diktanna:*\n\n❌ AWM RIH LO → ✅ AWM RIH LO\n❌ THEI LO → ✅ THEI RIH LO A, MAHSE...\n❌ KA LO → ✅ KA LA\n❌ TIH TAWP → ✅ TIH TAWP TA"
+        return "📝 *Mizo Grammar Diktanna:*\n\n❌ AWM RIH LO → ✅ AWM RIH LOH\n❌ THEI LO → ✅ THEIH LOH\n❌ KA LO KAL → ✅ KA LO KAL DAWN"
 
     else:
         return f"Ka dawng e: *{msg}*\n\n'price' emaw 'grammar' tih type rawh."
 
-# ==================== ROUTES ====================
+# ================= ROUTES =================
 @app.route('/')
 def home():
     status = "ON ✅" if BOT_STATUS else "OFF ❌"
@@ -100,13 +98,14 @@ def verify_webhook():
         logger.info("Webhook verified")
         return challenge, 200
     return "Forbidden", 403
-    
+
 @app.route('/on', methods=['GET', 'POST'])
 def bot_on():
     global BOT_STATUS
     BOT_STATUS = True
     logger.info("Bot ON - Status: True")
     return jsonify({"status": "ON", "message": "Bot chhuak leh ta e ✅"})
+
 @app.route('/off', methods=['POST'])
 def bot_off():
     global BOT_STATUS
@@ -119,7 +118,7 @@ def webhook():
     global BOT_STATUS
 
     if not BOT_STATUS:
-        return jsonify({"status": "ignored", "reason": "Bot off a ni"})
+        return jsonify({"status": "ignored", "reason": "Bot off a ni"}), 200
 
     data = request.get_json(silent=True) or {}
 
@@ -132,7 +131,7 @@ def webhook():
     else:
         message = data
 
-    # Message text la chhuah dan - dict leh string a inhawng lo turin
+    # Message text la chhuah dan - dict leh string a inang lo turin
     raw_body = message.get("body", "") or message.get("text", "")
 
     # Dict a nih chuan text body la chhuak rawh
@@ -140,14 +139,14 @@ def webhook():
         raw_body = raw_body.get('text', {}).get('body', '')
 
     msg_body = raw_body
-    msg_body_lower = raw_body.lower().strip() 
+    msg_body_lower = raw_body.lower().strip()
     sender = message.get("from", "") or message.get("chatId", "") or message.get("chat_id", "")
     sender = str(sender).replace("@s.whatsapp.net", "").replace("@c.us", "").replace("+", "")
 
     logger.info(f"DEBUG sender: {sender} | msg: {msg_body}")
-if not msg_body or not sender:
-    logger.info("Sender or msg ruak, tawp.")
-    return jsonify({"status": "ignored"}), 200
+    if not msg_body or not sender:
+        logger.info("Sender or msg ruak, tawp.")
+        return jsonify({"status": "ignored"}), 200
 
     # LOOP TIHTAWP - 1. Keimahni reply chu ignore
     if str(message.get("from_me")).lower() == "true":
@@ -156,14 +155,12 @@ if not msg_body or not sender:
     # LOOP TIHTAWP - 2. Echo: leh Ka dawng e: chu ignore hmasa ber
     if msg_body_lower.startswith("echo:") or msg_body_lower.startswith("ka dawng e:"):
         return jsonify({"status": "ignored", "reason": "Echo/Loop message"}), 200
-    
-
 
     # Process leh reply
     reply_text = get_mizo_reply(msg_body)
     send_whapi_message(sender, reply_text)
     return jsonify({"status": "sent", "to": sender, "reply": reply_text})
 
-# ==================== RUN ====================
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=PORT)
+# ================= RUN =================
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=PORT)
