@@ -12,21 +12,21 @@ def ai_reply(text):
             "https://api.groq.com/openai/v1/chat/completions",
             headers={"Authorization": f"Bearer {GROQ_KEY}", "Content-Type": "application/json"},
             json={
-                "model": "llama-3.1-8b-instant",
+                "model": "llama-3.3-70b-versatile", # <--- THLAK
                 "messages": [
                     {
                         "role": "system",
-                        "content": "Nang chu TESRA i ni. Mizo tawng chauh hmang la, Mizo tlangval polite leh fiamthu thiam tak angin chhang ang che. Mi lungngai emaw buai emaw an sawi chuan thurawn tawi fel pe la."
+                        "content": "I hming TESRA, Mizo tawngin chauh chhang thin ang che. I awm dan tur: Mizo tlangval polite, fiamthu thiam, thurawn pe thiam. I thupui sawi chhuak suh, i inhrilhfiah suh."
                     },
                     {"role": "user", "content": text}
                 ],
-                "temperature": 0.7,
-                "max_tokens": 250
+                "temperature": 0.5,
+                "max_tokens": 200
             },
             timeout=15
         )
         data = r.json()
-        return data["choices"][0]["message"]["content"] if "choices" in data else "Ka chiang lo deuh"
+        return data["choices"][0]["message"]["content"] if "choices" in data else "Ka hrethiam lo"
     except Exception as e:
         return "Error"
 
