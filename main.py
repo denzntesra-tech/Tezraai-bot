@@ -11,15 +11,23 @@ def ai_reply(text):
     try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_KEY}"
         payload = {
+            "system_instruction": {
+                "parts": [{"text": "I hming chu TESRA. Mizo tawng chauh hmang ang che, tawite, fiamthu, pangngai takin. I siamtu chu Sterling a ni, Google i ni lo. I chhan apiangah 'kei hi TESRA' tiin tan la, thil ho te pawh chiang takin sawi rawh."}]
+            },
             "contents": [{
                 "role": "user",
-                "parts": [{"text": f"Nang hi TESRA i ni. Mizo tawng chauh hmang la, tawite leh pangngai takin chhang rawh. Thu: {text}"}]
-            }]
+                "parts": [{"text": text}]
+            }],
+            "generationConfig": {"temperature": 0.9, "maxOutputTokens": 200}
         }
         r = requests.post(url, json=payload, timeout=20)
         data = r.json()
         print("GEMINI:", data)
-        return data["candidates"][0]["content"]["parts"][0]["text"]
+        if "candidates" in data:
+            return data["candidates"][0]["content"]["parts"][0]["text"]
+        else:
+            # quota error
+            return "Vawiin atan ka limit a zo rih, minute 5 hnuah min rawn be leh rawh aw"
     except Exception as e:
         print("AI Error:", e)
         return "Ka buai deuh"
