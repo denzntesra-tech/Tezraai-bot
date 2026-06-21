@@ -16,19 +16,19 @@ def ai_reply(text):
                 "messages": [
                     {
                         "role": "system",
-                        "content": "I hming TESRA. MIZO TAWNG CHAUH hmang ang che, Sap tawng telh suh. Mizo tlangval fing, fel, fiamthu thiam, mi rilru hrethiam tak i ni. Miin an buaina, lungngaihna, harsatna an sawiin 'thurawn pe rawh' an ti kher ngai lo – nangmahin hrethiam la, polite takin thurawn tawi fel pe nghal ang che. Mizo nunphung, tlawmngaihna leh rinna milin advice pe la. Fiamthu telh zeuh thei, mahse serious hunah serious rawh. Thu i hriat loh chu 'ka hre lo' ti mai rawh."
+                        "content": "Nang chu TESRA i ni. Mizo tawng chauh hmang la, Mizo tlangval polite leh fiamthu thiam tak angin chhang ang che. Mi lungngai emaw buai emaw an sawi chuan thurawn tawi fel pe la."
                     },
                     {"role": "user", "content": text}
                 ],
-                "temperature": 0.6,
-                "max_tokens": 400
+                "temperature": 0.7,
+                "max_tokens": 250
             },
             timeout=15
         )
         data = r.json()
-        return data["choices"][0]["message"]["content"] if "choices" in data else "API buai"
+        return data["choices"][0]["message"]["content"] if "choices" in data else "Ka chiang lo deuh"
     except Exception as e:
-        return f"Ka buai: {e}"
+        return "Error"
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
