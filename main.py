@@ -9,21 +9,20 @@ GEMINI_KEY = os.environ.get("GEMINI_KEY")
 
 def ai_reply(text):
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_KEY}"
         payload = {
             "contents": [{
                 "role": "user",
-                "parts": [{"text": f"Nang hi TESRA i ni. Mizo tawng chauh hmang la, tawite, pangngai leh fiamthu deuhin chhang rawh. Thu: {text}"}]
+                "parts": [{"text": f"Nang hi TESRA i ni. Mizo tawng chauh hmang la, tawite leh pangngai takin chhang rawh. Thu: {text}"}]
             }]
         }
         r = requests.post(url, json=payload, timeout=20)
         data = r.json()
-        # Railway log ah a lang ang
         print("GEMINI:", data)
         return data["candidates"][0]["content"]["parts"][0]["text"]
     except Exception as e:
         print("AI Error:", e)
-        return "Ka buai deuh, nakinah min rawn be leh rawh"
+        return "Ka buai deuh"
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
