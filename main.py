@@ -9,7 +9,7 @@ GEMINI_KEY = os.environ.get("GEMINI_KEY")
 
 def ai_reply(text):
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_KEY}"
         payload = {
             "contents": [{
                 "role": "user",
