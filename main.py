@@ -13,7 +13,7 @@ def ai_reply(text):
             "https://api.groq.com/openai/v1/chat/completions",
             headers={"Authorization": f"Bearer {GROQ_KEY}", "Content-Type": "application/json"},
             json={
-                "model": "llama3-8b-8192",
+                "model": "llama-3.1-8b-instant",
                 "messages": [
                     {"role": "system", "content": "I hming chu TESRA. Mizo tawng chauh hmang la, tawngkam nelawm, tawi fel leh fiamthu telh zeuh zeuh in chhang ang che."},
                     {"role": "user", "content": text}
