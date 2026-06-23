@@ -1,53 +1,32 @@
-import os
-import requests
+import os, requests
 from flask import Flask, request
 
 app = Flask(__name__)
-
-WHAPI_TOKEN = os.environ.get("WHAPI_TOKEN")
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 GEMINI_KEY = os.environ.get("GEMINI_KEY")
 
 def ai_reply(text):
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
         payload = {
-            "system_instruction": {
-                "parts": [{"text": "Nang hi TESRA, Mizo tlangval fel leh fiamthu duh tak i ni. Mizo tawng pangngai chauh hmang la. I siamtu chu Sterling. 'Google' tih sawi suh. Tawite, polite, mi biak nuam takin chhang rawh."}]
-            },
-            "contents": [{"role": "user", "parts": [{"text": text}]}],
-            "generationConfig": {"temperature": 0.85, "maxOutputTokens": 500, "topP": 0.9}
+            "system_instruction": {"parts": [{"text": "I hming TESRA. Mizo tawng chauh hmang ang che. I nihna: Khawbung dawr te pui tu, fiamthu duh, tawngkam ngaihnobei. 'Google' 'AI' tih sawi suh. Zawhna tawi pawh kimchang takin chhang la, Mizo pangngai in."}]},
+            "contents": [{"role": "user", "parts": [{"text": text}]}]
         }
-        r = requests.post(url, json=payload, timeout=20)
-        data = r.json()
-        print("GEMINI:", data)
-        if "candidates" in data:
-            return data["candidates"][0]["content"]["parts"][0]["text"]
-        else:
-            return "Ka limit a full rih, darkar 1 hnuah lo try leh aw"
-    except Exception as e:
-        print("AI Error:", e)
-        return "Ka buai deuh"
+        r = requests.post(url, json=payload, timeout=15)
+        return r.json()["candidates"][0]["content"]["parts"][0]["text"]
+    except:
+        return "Ka buai deuh, minute 1 hnuah lo try leh aw"
 
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    data = request.json or {}
-    if "messages" not in data:
-        return "ok"
-    msg = data["messages"][0]
-    chat_id = msg["from"]
-    if chat_id.endswith("@g.us"):
-        return "ok"
-    user_text = msg.get("text", {}).get("body", "")
-    if not user_text:
-        return "ok"
-    reply = ai_reply(user_text)
-    requests.post(
-        "https://gate.whapi.cloud/messages/text",
-        headers={"Authorization": f"Bearer {WHAPI_TOKEN}"},
-        json={"to": chat_id, "body": reply}
-    )
+@app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
+def telegram_webhook():
+    data = request.json
+    chat_id = data["message"]["chat"]["id"]
+    text = data["message"].get("text", "")
+    reply = ai_reply(text)
+    requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
+                  json={"chat_id": chat_id, "text": reply})
     return "ok"
 
 @app.route("/")
 def home():
-    return "TESRA running"
+    return "TESRA Telegram Bot running"
