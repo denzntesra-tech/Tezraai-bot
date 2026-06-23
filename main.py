@@ -22,7 +22,7 @@ genai.configure(api_key=GEMINI_KEY)
 
 # Model – 1.5-flash a stable
 try:
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-2.5-flash")
     logger.info("Gemini model loaded")
 except Exception as e:
     logger.error(f"Model init failed: {e}")
