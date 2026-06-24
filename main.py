@@ -53,7 +53,7 @@ def webhook():
         send_typing(chat_id)  # Gemini call hmaah hian dah rawh
         
         prompt = create_prompt(text)
-                try:
+        try:
             reply = model.generate_content(prompt).text
         except Exception as e:
             if "429" in str(e):
