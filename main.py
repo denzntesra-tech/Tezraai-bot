@@ -53,9 +53,16 @@ def webhook():
         send_typing(chat_id)  # Gemini call hmaah hian dah rawh
         
         prompt = create_prompt(text)
-        reply = model.generate_content(prompt).text
+                try:
+            reply = model.generate_content(prompt).text
+        except Exception as e:
+            if "429" in str(e):
+                reply = "Ka pu/ka pi, tunah customer ka buaipui mek a, minute 1 hnuah min lo zawt leh mai dawn em ni? Ka inthlahrung hle mai 🙏"
+            else:
+                reply = "Tihpalh, ka system a buai deuh. Nakkinah min lo be leh dawn nia."
         
         send_telegram(chat_id, reply)
+        
     return {"ok": True}
 
 @app.route("/")
