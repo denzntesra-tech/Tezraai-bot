@@ -11,7 +11,9 @@ model = genai.GenerativeModel("gemini-2.5-flash")
 
 # Railway Variables ah i dah tawh: TELEGRAM_TO...
 BOT_TOKEN = os.environ["TELEGRAM_TOKEN"]  # I variable hming dik tak dah rawh
-
+def send_typing(chat_id):
+    requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendChatAction",
+                 json={"chat_id": chat_id, "action": "typing"})
 # Dawr info chauh dah. Token chu code ah lang tawh lo
 DAWR_INFO = {
     "dawr_hming": "Demo Dawr Aizawl",
@@ -47,6 +49,8 @@ def webhook():
     if "message" in data and "text" in data["message"]:
         chat_id = data["message"]["chat"]["id"]
         text = data["message"]["text"]
+
+        send_typing(chat_id)  # Gemini call hmaah hian dah rawh
         
         prompt = create_prompt(text)
         reply = model.generate_content(prompt).text
