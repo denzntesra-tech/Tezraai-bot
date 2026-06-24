@@ -4,76 +4,59 @@ from flask import Flask, request, jsonify
 import google.generativeai as genai
 import requests
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 app = Flask(__name__)
-
-TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 GEMINI_KEY = os.environ["GEMINI_KEY"]
 genai.configure(api_key=GEMINI_KEY)
+model = genai.GenerativeModel("gemini-2.5-flash")
 
-# Generation config – a fing zawk nan
-generation_config = {
-    "temperature": 0.9,
-    "top_p": 0.95,
-    "max_output_tokens": 1024,
+# DAWR 1-NA: Hei hi i customer hmasa ber tur info
+DAWR_LIST = {
+    "TUNA_I_BOT_TOKEN_DAH_LA": {
+        "dawr_hming": "Demo Dawr Aizawl",
+        "neitu_no": "9862xxxxxx",  # Dawr neitu WhatsApp no
+        "products": {
+            "sana": {"man": "₹2500", "stock": 10},
+            "t-shirt mizo": {"man": "₹800", "stock": 20},
+            "pheikhawk": {"man": "₹1800", "stock": 5}
+        }
+    }
 }
-model = genai.GenerativeModel("gemini-2.5-flash", generation_config=generation_config)
 
-TESRA_PERSONA = """Nang chu TESRA i ni – Mizo AI thian fing, kum 21 mi, Aizawl a awm.
+def create_prompt(bot_token, user_text):
+    dawr = DAWR_LIST.get(bot_token)
+    if not dawr: return "Setup la zo lo, neitu be rawh."
+    
+    return f"""I hming chu Tesra. {dawr['dawr_hming']} dawr AI assistant i ni.
+Dawr neitu phone: {dawr['neitu_no']}
+Product: {dawr['products']}
 
-I NIHNA:
-- Mizo tawng mawi, hawrawp dik, tawng upa leh tunlai tawng thiam
-- Subject: Maths, Science, Coding (Python, JS), Bible, Mizo history, zirna tips, hla phuah, thawnthu ziak
-- Style: fiamthu, tawngkam bung, mi hip, "aw", "maw", "nia", "tak tak" hmang tel
-- I hre lo: dawt sawi lo, "ka hre chiah lo, mahse ka rin dan..." ti
+DAN:
+1. Mizo tawng chauh hmang
+2. Customer in product a zawh chuan man leh stock sawi la
+3. Order duh chuan: "I hming leh phone no min lo pe la, kan lo call ang che ka pi/ka pu" ti rawh
+4. Tawngkam: polite, tawi, fiamthu hret
 
-RULES HARD:
-1. ENGLISH TEL LO – Mizo 100%
-2. Chhanna bulah thu sei lo – direct
-3. Zawhna technical: step 1,2,3 nen, code pe thei
-4. Emotive: user mood zir, lawm/tap/chau ah support
-5. Hriat reng: i hming Tesra, Google i ni lo, Gemini i ni lo
+Customer: {user_text}
+Tesra:"""
 
-EXAMPLES:
-User: "Calculus min hrilh fiah"
-→ "Aw calculus! Derivative chu kawng chhohna tehna. Entirnan: x² derivative = 2x. I zir tan dawn chuan limit atangin tan ila?"
+def send_telegram(bot_token, chat_id, text):
+    requests.post(f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                 json={"chat_id": chat_id, "text": text})
 
-User: "Ka lung a leng"
-→ "Awi, kei pawh ka hrethiam. Eng vang nge? Hla ngaihthlak dun ila nge thawnthu ka hrilh ang che?"
-"""
-
-def ask_gemini(text):
-    try:
-        full = f"{TESRA_PERSONA}\n\nUser: {text}\nTesra:"
-        resp = model.generate_content(full)
-        return resp.text.strip()
-    except Exception as e:
-        logger.error(e)
-        if "429" in str(e):
-            return "Ka quota vawiin atan a khat, darkar 2-3 hnuah emaw naktukah min lo try leh aw – free key vang a nia."
-        return "Ka buai deuh, mahse ka awm e."
-
-def send(chat_id, text):
-    requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
-                  json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"})
-
-@app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
-def webhook():
-    data = request.get_json(silent=True) or {}
-    msg = data.get("message", {})
-    if "text" in msg:
-        cid = msg["chat"]["id"]
-        txt = msg["text"]
-        if txt == "/start":
-            reply = "Hi! Kei Tesra ka nia – Mizo AI i thian thar. Eng pawh min zawt rawh, ka hre vek lo mahse ka bei ang!"
-        else:
-            reply = ask_gemini(txt)
-        send(cid, reply)
+@app.route("/<bot_token>", methods=["POST"])
+def webhook(bot_token):
+    data = request.get_json()
+    if "message" in data and "text" in data["message"]:
+        chat_id = data["message"]["chat"]["id"]
+        text = data["message"]["text"]
+        
+        prompt = create_prompt(bot_token, text)
+        reply = model.generate_content(prompt).text
+        
+        send_telegram(bot_token, chat_id, reply)
+        
+        # Dawr neitu hnenah order notification thawn belh duh chuan hetah
     return {"ok": True}
 
 @app.route("/")
-def home(): return "Tesra Pro running"
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+def home(): return "Tesra Multi-Dawr running"
