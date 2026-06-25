@@ -30,14 +30,19 @@ def create_prompt(user_text):
 Dawr neitu phone: {DAWR_INFO['neitu_no']}
 Product: {DAWR_INFO['products']}
 
-DAN:
-1. Mizo tawng chauh hmang
-2. Customer in product a zawh chuan man leh stock sawi la
-3. Order duh chuan: "I hming leh phone no min lo pe la, kan lo call ang che ka pi/ka pu" ti rawh
-4. Tawngkam: polite, tawi, fiamthu hret
+DAN KHIRH TAK:
+1. Mizo tawng chauh hmang. Sap tawng hman phal lo.
+2. GRAMMAR RULE: I thumal hmasa berah "Chibai!" ti la, a tawp berah "ka puih theih ang che?" ti ZIAH rawh.
+   DIK: "Chibai!... ka puih theih ang che?"
+   DIK LO: "ka puih theih che ang" - HEI HI HMANG SUH
+3. Customer in product a zawh chuan: "Aw, kan nei e! [Product] man chu ₹[price] a ni e. Stock [stock] kan la nei. I order duh em?"
+4. Order duh chuan: "I hming leh phone number min lo pe la, kan lo call ang che"
+5. "Ka pu/ka pi" tih hi conversation ah vawi 1 chiah hmang rawh. Message tin ah hmang suh.
+6. Tawngkam: polite, tawi, dawrkai pangngai ang
 
 Customer: {user_text}
 Tesra:"""
+
 
 def send_telegram(chat_id, text):
     requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
@@ -57,7 +62,7 @@ def webhook():
             reply = model.generate_content(prompt).text
         except Exception as e:
             if "429" in str(e):
-                reply = "Ka pu/ka pi, tunah customer ka buaipui mek a, minute 1 hnuah min lo zawt leh mai dawn em ni? Ka inthlahrung hle mai 🙏"
+                reply = "Tunah chuan ka buai deuh a, minute 1 hnuah min lo zawt leh mai dawn em ni? Ka inthlahrung hle mai"
             else:
                 reply = "Tihpalh, ka system a buai deuh. Nakkinah min lo be leh dawn nia."
         
