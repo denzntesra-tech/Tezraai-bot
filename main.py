@@ -99,6 +99,21 @@ def process_message(chat_id, text):
         prompt = create_prompt(text, stock_data)
         reply = model.generate_content(prompt).text
         
+        # ===== FIX 1: Grammar force fix =====
+        reply = reply.replace("angche", "ang che")
+        reply = reply.replace("Enge", "Eng tin nge")
+        reply = reply.replace("Eng nge", "Eng tin nge")
+        reply = reply.replace("Ka pu", "")
+        reply = reply.replace("Ka pi", "")
+        reply = reply.replace("Chibai!", "") # Greeting ah chauh kan dah tawh dawn
+        
+        # Hi/Start ah chauh Chibai! dah rawh
+        if text.lower() in ['/start', 'hi', 'hello', 'chibai']:
+            reply = "Chibai! " + reply.strip()
+        
+        reply = reply.strip()
+        # ====================================
+        
         # Order detect: hming + phone number a awm chuan
         if "phone" in text.lower() or any(char.isdigit() for char in text):
             import re
@@ -112,8 +127,7 @@ def process_message(chat_id, text):
         
         send_telegram(chat_id, reply)
     except Exception as e:
-        send_telegram(chat_id, "Ka pu, tunah ka buai deuh a. Minute 1 hnuah min lo zawt leh mai dawn em ni?")
-
+        send_telegram(chat_id, "Ih aw, tunah ka buai deuh a. Minute 1 hnuah min lo zawt leh mai dawn em ni?")
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def webhook():
     data = request.get_json()
