@@ -3,6 +3,7 @@ import json
 import logging
 from datetime import datetime
 from flask import Flask, request, jsonify
+from threading import Thread
 import google.generativeai as genai
 import gspread
 from google.oauth2.service_account import Credentials
@@ -78,6 +79,27 @@ DAN KHIRH TAK:
 
 Customer: {user_text}
 Tesra:"""
+def process_message(chat_id, text):
+    # Hei hi background ah a kal ang
+    try:
+        stock_data = get_stock()
+        prompt = create_prompt(text, stock_data)
+        reply = model.generate_content(prompt).text
+        
+        # Order detect: hming + phone number a awm chuan
+        if "phone" in text.lower() or any(char.isdigit() for char in text):
+            import re
+            phone_match = re.search(r'\d{10}', text)
+            if phone_match:
+                for item in stock_data:
+                    if item.get('Product','').lower() in text.lower() and int(item.get('Stock', 0)) > 0:
+                        update_stock(item['Product'], int(item['Stock']) - 1)
+                        log_order(item['Product'], "Customer", phone_match.group())
+                        break
+        
+        send_telegram(chat_id, reply)
+    except Exception as e:
+        send_telegram(chat_id, "Ka pu, tunah ka buai deuh a. Minute 1 hnuah min lo zawt leh mai dawn em ni?")
 
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def webhook():
@@ -88,39 +110,16 @@ def webhook():
         
         send_typing(chat_id)
         
-        # Sheet atangin stock la
-        stock_data = get_stock()
-        prompt = create_prompt(text, stock_data)
+        # Hi/Start ah chuan rang takin reply nghal
+        if text.lower() in ['/start', 'hi', 'hello', 'chibai', 'hi tesra']:
+            send_telegram(chat_id, "Chibai! Ka hming chu Tesra. Mizo dawr AI assistant ka ni. Eng nge ka puih theih ang che?")
+            return "OK", 200
         
-        try:
-            reply = model.generate_content(prompt).text
-            
-            # Order detect: hming + phone number a awm chuan
-            if "phone" in text.lower() or any(char.isdigit() for char in text):
-                # Simple check: number 10 digit a awm chuan order ah ngai ang
-                import re
-                phone_match = re.search(r'\d{10}', text)
-                if phone_match:
-                    # Product hmasa ber stock tih tlem sak
-                    for item in stock_data:
-                        if item['Product'].lower() in text.lower() and item['Stock'] > 0:
-                            update_stock(item['Product'], item['Stock'] - 1)
-                            log_order(item['Product'], "Customer", phone_match.group())
-                            # Neitu hnenah notify
-                            notify_text = f"🔔 ORDER THAR!\nProduct: {item['Product']}\nPhone: {phone_match.group()}\nStock thar: {item['Stock'] - 1}"
-                            send_telegram(NEITU_CHAT_ID, notify_text)
-                            break
-            
-            send_telegram(chat_id, reply)
-            
-        except Exception as e:
-            if "429" in str(e):
-                reply = "Chibai! Tunah chuan ka buai deuh a, minute 1 hnuah min lo zawt leh mai dawn em ni? Ka inthlahrung hle mai. ka puih theih ang che?"
-            else:
-                reply = "Chibai! Tihpalh, ka system a buai deuh. Nakkinah min lo be leh dawn nia. ka puih theih ang che?"
-            send_telegram(chat_id, reply)
+        # A dang chu background ah process tir rawh
+        Thread(target=process_message, args=(chat_id, text)).start()
     
-    return {"ok": True}
+    # Telegram hnenah "Ka dawng e" ti nghal - Sec 1 pawh tling lo
+    return "OK", 200
 
 @app.route("/")
 def home():
