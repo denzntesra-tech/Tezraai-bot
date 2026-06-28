@@ -58,7 +58,7 @@ def log_order(product, customer_name, phone):
     commands_sheet.append_row([timestamp, product, customer_name, phone, "ORDER THAR"])
 
 def create_prompt(user_text, stock_data):
-    stock_text = "\n".join([f"{item['Product']}: ₹{item['Man']}, Stock: {item['Stock']}" for item in stock_data])
+    stock_text = "\n".join([f"{item.get('Product', '')}: ₹{item.get('Man', 0)}, Stock: {item.get('Stock', 0)}" for item in stock_data if item.get('Product')])
     
     return f"""I hming chu Tesra. Mizo dawr AI assistant i ni.
 
