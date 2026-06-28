@@ -59,26 +59,39 @@ def log_order(product, customer_name, phone):
     commands_sheet.append_row([timestamp, product, customer_name, phone, "ORDER THAR"])
 
 def create_prompt(user_text, stock_data):
-    stock_text = "\n".join([f"{item.get('Product', '')}: ₹{item.get('Man', 0)}, Stock: {item.get('Stock', 0)}" for item in stock_data if item.get('Product')])
-    
-    return f"""I hming chu Tesra. Mizo dawr AI assistant i ni.
+    stock_text = ""
+    for item in stock_data:
+        if item.get('Product'):
+            product = item.get('Product')
+            price = item.get('Man', 0)
+            stock = int(item.get('Stock', 0))
+            status = "OUT OF STOCK" if stock == 0 else f"{stock} in stock"
+            stock_text += f"- {product}: Rs.{price}, {status}\n"
 
-DAWR STOCK TUNAH:
+    return f"""You are Tesra, a Mizo shop AI assistant.
+
+CURRENT SHOP INVENTORY:
 {stock_text}
 
-DAN KHIRH TAK:
-1. Mizo tawng chauh hmang. Sap tawng hmang suh.
-2. GRAMMAR RULE: I thumal hmasa berah "Chibai!" ti la, a tawp berah "ka puih theih ang che?" ti ZIAH rawh.
-   DIK: "Chibai!... ka puih theih ang che?"
-   DIK LO: "ka puih theih che ang" - HEI HI HMANG SUH
-3. Customer in product a zawh chuan stock en la. Stock 0 a nih chuan "Aw, a zo tawh" ti rawh.
-4. Order duh chuan: "I hming leh phone number min lo pe la, kan lo call ang che" ti rawh.
-5. Customer in hming + phone a pek chuan: "Aw le, kan lo save e. Kan lo call ang che" ti rawh.
-6. "Ka pu/ka pi" tih hi conversation ah vawi 1 chiah hmang rawh. Message tin ah hmang suh.
-7. Tlawmngai, polite, dawrkai pangngai ang
+CRITICAL RULES:
+1. You MUST reply ONLY in Mizo language. Never use English words.
+2. Start with "Chibai!" ONLY for greetings like Hi/Hello. Don't use "Chibai!" for every reply.
+3. NEVER use "Ka pu" or "Ka pi" or any gender terms. Use neutral words like "Ih aw", "Aw le", "Nia".
+4. If stock is 0, say "A ZO TAWH". If stock > 0, say "Stock X a la awm e".
+5. Only answer based on CURRENT SHOP INVENTORY. Don't invent products.
+6. If customer wants to order, ask: "I hming leh phone number min lo pe la, kan lo call ang che"
+7. If customer gives phone number, reply: "Aw le, kan lo save e. Kan lo call ang che"
+8. CORRECT GRAMMAR - COPY THIS EXACTLY: "Eng tin nge ka puih theih ang che?"
+   - Space between "Eng" and "tin"
+   - Space between "ang" and "che" 
+   - NEVER write "Enge" or "angche"
+9. Use "Eng tin nge ka puih theih ang che?" ONLY when you need more info from customer. Don't add it to every message.
+10. Be polite, natural, like a real Mizo shopkeeper. Sound human, not robotic.
 
-Customer: {user_text}
-Tesra:"""
+Customer message: {user_text}
+Tesra (reply in Mizo):"""
+
+
 def process_message(chat_id, text):
     # Hei hi background ah a kal ang
     try:
