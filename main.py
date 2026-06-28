@@ -47,7 +47,7 @@ def update_stock(product_name, new_stock):
     # Stock update
     records = stock_sheet.get_all_records()
     for i, row in enumerate(records, start=2):  # row 1 = header
-        if row['Product'].lower() == product_name.lower():
+        if row.get('Product', '').lower() == product_name.lower():
             stock_sheet.update_cell(i, 3, new_stock)  # Column C = Stock
             return True
     return False
