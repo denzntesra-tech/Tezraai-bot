@@ -149,3 +149,16 @@ def webhook():
 @app.route("/")
 def home():
     return "Tesra Bot Running with Google Sheets"
+    
+@app.route("/debug")
+def debug():
+    try:
+        data = get_stock()
+        return jsonify({
+            "sheet_id": STOCK_SHEET_ID,
+            "rows": len(data),
+            "headers": list(data[0].keys()) if data else [],
+            "first_row": data[0] if data else None
+        })
+    except Exception as e:
+        return jsonify({"error": str(e), "sheet_id": STOCK_SHEET_ID}), 500
