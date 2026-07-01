@@ -41,9 +41,11 @@ def send_typing(chat_id):
         json={"chat_id": chat_id, "action": "typing"})
 
 def get_stock():
-    # Sheet atangin stock la chhuak. A1: Product, B1: Man, C1: Stock
-    data = stock_sheet.get_all_records()
-    return data
+    records = stock_sheet.get_all_records()
+    cleaned = []
+    for r in records:
+        cleaned.append({k.strip(): v for k, v in r.items()})
+    return cleaned
 
 def update_stock(product_name, new_stock):
     # Stock update
