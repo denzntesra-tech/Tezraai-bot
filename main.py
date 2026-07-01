@@ -95,11 +95,17 @@ Tesra (reply in Mizo):"""
 def process_message(chat_id, text):
     # Hei hi background ah a kal ang
     try:
+        # Greeting – Gemini call hma in, fix sa
+        is_greeting = text.lower().strip() in ['/start', 'hi', 'hello', 'chibai']
+        if is_greeting:
+            send_telegram(chat_id, "Chibai! Ka hming chu Tesra. Eng tin nge ka puih theih ang che?")
+            return
+
         stock_data = get_stock()
         prompt = create_prompt(text, stock_data)
         reply = model.generate_content(prompt).text
-        
-        # ===== Grammar force fix =====
+
+        # ====== Grammar force fix ======
         reply = reply.replace("angche", "ang che")
         reply = reply.replace("Angche", "Ang che")
         reply = reply.replace("Engtin", "Eng tin")
@@ -107,26 +113,24 @@ def process_message(chat_id, text):
         reply = reply.replace("Enge", "Eng tin nge")
         reply = reply.replace("Ka pu", "").replace("Ka pi", "")
         reply = reply.replace("ka pu", "").replace("ka pi", "")
-        
-        # Chibai! – Hi/Start ah chauh
-        is_greeting = text.lower().strip() in ['/start', 'hi', 'hello', 'chibai']
-        reply = reply.replace("Chibai!", "")
-        if is_greeting:
-            reply = "Chibai! " + reply.strip()
-        
+        # Gemini Mizo tisual fix
+        reply = reply.replace("ih theih", "ka puih theih")
+        reply = reply.replace("ihtheih", "ka puih theih")
+        # Chibai spam – greeting lo ah chuan paih
+        reply = reply.replace("Chibai!", "").strip()
         reply = " ".join(reply.split())
-        # =============================
-        
+        # ==============================
+
         # Order detect: hming + phone number a awm chuan
         if "phone" in text.lower() or any(char.isdigit() for char in text):
             phone_match = re.search(r'\d{10}', text)
             if phone_match:
                 for item in stock_data:
-                    if item.get('Product','').lower() in text.lower() and int(item.get('Stock', 0)) > 0:
+                    if item.get('Product', '').lower() in text.lower() and int(item.get('Stock', 0)) > 0:
                         update_stock(item['Product'], int(item['Stock']) - 1)
                         log_order(item['Product'], "Customer", phone_match.group())
                         break
-        
+
         send_telegram(chat_id, reply)
     except Exception as e:
         logging.error(e)
@@ -145,7 +149,3 @@ def webhook():
 @app.route("/")
 def home():
     return "Tesra Bot Running with Google Sheets"
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
