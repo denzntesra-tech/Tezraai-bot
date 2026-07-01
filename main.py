@@ -8,6 +8,7 @@ import google.generativeai as genai
 import gspread
 from google.oauth2.service_account import Credentials
 import requests
+import re
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -15,7 +16,7 @@ logging.basicConfig(level=logging.INFO)
 # Railway Variables atangin la vek
 GEMINI_KEY = os.environ["GEMINI_KEY"]
 BOT_TOKEN = os.environ["BOT_TOKEN"]
-NEITU_CHAT_ID = os.environ["NEITU_CHAT_ID"]
+NEITU_CHAT_ID = os.environ.get("NEITU_CHAT_ID", "")
 STOCK_SHEET_ID = os.environ["STOCK_SHEET_ID"]
 COMMANDS_SHEET_ID = os.environ["COMMANDS_SHEET_ID"]
 GOOGLE_CREDS = json.loads(os.environ["GOOGLE_CREDS"])
@@ -33,11 +34,11 @@ commands_sheet = gc.open_by_key(COMMANDS_SHEET_ID).sheet1
 
 def send_telegram(chat_id, text):
     requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-                  json={"chat_id": chat_id, "text": text})
+        json={"chat_id": chat_id, "text": text})
 
 def send_typing(chat_id):
     requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendChatAction",
-                  json={"chat_id": chat_id, "action": "typing"})
+        json={"chat_id": chat_id, "action": "typing"})
 
 def get_stock():
     # Sheet atangin stock la chhuak. A1: Product, B1: Man, C1: Stock
@@ -65,7 +66,7 @@ def create_prompt(user_text, stock_data):
             product = item.get('Product')
             price = item.get('Man', 0)
             stock = int(item.get('Stock', 0))
-            status = "OUT OF STOCK" if stock == 0 else f"{stock} in stock"
+            status = "A ZO TAWH" if stock == 0 else f"Stock {stock} a la awm e"
             stock_text += f"- {product}: Rs.{price}, {status}\n"
 
     return f"""You are Tesra, a Mizo shop AI assistant.
@@ -83,14 +84,13 @@ CRITICAL RULES:
 7. If customer gives phone number, reply: "Aw le, kan lo save e. Kan lo call ang che"
 8. CORRECT GRAMMAR - COPY THIS EXACTLY: "Eng tin nge ka puih theih ang che?"
    - Space between "Eng" and "tin"
-   - Space between "ang" and "che" 
+   - Space between "ang" and "che"
    - NEVER write "Enge" or "angche"
 9. Use "Eng tin nge ka puih theih ang che?" ONLY when you need more info from customer. Don't add it to every message.
 10. Be polite, natural, like a real Mizo shopkeeper. Sound human, not robotic.
 
 Customer message: {user_text}
 Tesra (reply in Mizo):"""
-
 
 def process_message(chat_id, text):
     # Hei hi background ah a kal ang
@@ -99,24 +99,26 @@ def process_message(chat_id, text):
         prompt = create_prompt(text, stock_data)
         reply = model.generate_content(prompt).text
         
-        # ===== FIX 1: Grammar force fix =====
+        # ===== Grammar force fix =====
         reply = reply.replace("angche", "ang che")
-        reply = reply.replace("Enge", "Eng tin nge")
+        reply = reply.replace("Angche", "Ang che")
+        reply = reply.replace("Engtin", "Eng tin")
         reply = reply.replace("Eng nge", "Eng tin nge")
-        reply = reply.replace("Ka pu", "")
-        reply = reply.replace("Ka pi", "")
-        reply = reply.replace("Chibai!", "") # Greeting ah chauh kan dah tawh dawn
+        reply = reply.replace("Enge", "Eng tin nge")
+        reply = reply.replace("Ka pu", "").replace("Ka pi", "")
+        reply = reply.replace("ka pu", "").replace("ka pi", "")
         
-        # Hi/Start ah chauh Chibai! dah rawh
-        if text.lower() in ['/start', 'hi', 'hello', 'chibai']:
+        # Chibai! – Hi/Start ah chauh
+        is_greeting = text.lower().strip() in ['/start', 'hi', 'hello', 'chibai']
+        reply = reply.replace("Chibai!", "")
+        if is_greeting:
             reply = "Chibai! " + reply.strip()
         
-        reply = reply.strip()
-        # ====================================
+        reply = " ".join(reply.split())
+        # =============================
         
         # Order detect: hming + phone number a awm chuan
         if "phone" in text.lower() or any(char.isdigit() for char in text):
-            import re
             phone_match = re.search(r'\d{10}', text)
             if phone_match:
                 for item in stock_data:
@@ -127,25 +129,17 @@ def process_message(chat_id, text):
         
         send_telegram(chat_id, reply)
     except Exception as e:
+        logging.error(e)
         send_telegram(chat_id, "Ih aw, tunah ka buai deuh a. Minute 1 hnuah min lo zawt leh mai dawn em ni?")
+
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def webhook():
     data = request.get_json()
     if "message" in data and "text" in data["message"]:
         chat_id = data["message"]["chat"]["id"]
         text = data["message"]["text"]
-        
         send_typing(chat_id)
-        
-        # Hi/Start ah chuan rang takin reply nghal
-        if text.lower() in ['/start', 'hi', 'hello', 'chibai', 'hi tesra']:
-            send_telegram(chat_id, "Chibai! Ka hming chu Tesra. Mizo dawr AI assistant ka ni. Eng nge ka puih theih ang che?")
-            return "OK", 200
-        
-        # A dang chu background ah process tir rawh
         Thread(target=process_message, args=(chat_id, text)).start()
-    
-    # Telegram hnenah "Ka dawng e" ti nghal - Sec 1 pawh tling lo
     return "OK", 200
 
 @app.route("/")
