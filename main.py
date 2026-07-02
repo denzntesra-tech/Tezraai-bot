@@ -34,11 +34,11 @@ commands_sheet = gc.open_by_key(COMMANDS_SHEET_ID).sheet1
 
 def send_telegram(chat_id, text):
     requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-        json={"chat_id": chat_id, "text": text})
+                  json={"chat_id": chat_id, "text": text})
 
 def send_typing(chat_id):
     requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendChatAction",
-        json={"chat_id": chat_id, "action": "typing"})
+                  json={"chat_id": chat_id, "action": "typing"})
 
 def get_stock():
     records = stock_sheet.get_all_records()
@@ -47,19 +47,19 @@ def get_stock():
         cleaned.append({k.strip(): v for k, v in r.items()})
     return cleaned
 
-def update_stock(product_name, new_stock):
-    # Stock update
-    records = stock_sheet.get_all_records()
-    for i, row in enumerate(records, start=2):  # row 1 = header
-        if row.get('Product', '').lower() == product_name.lower():
-            stock_sheet.update_cell(i, 3, new_stock)  # Column C = Stock
-            return True
-    return False
+def update_stock(product_name, qty_sold):
+    all_data = stock_sheet.get_all_values()
+    for i, row in enumerate(all_data, start=1): # row 1 = header
+        if row[0].strip().lower() == product_name.lower():
+            current_stock = int(row[2]) # Column C = Stock
+            new_stock = max(0, current_stock - qty_sold)
+            stock_sheet.update_cell(i, 3, new_stock)
+            return new_stock
+    return None
 
-def log_order(product, customer_name, phone):
-    # Commands sheet ah order log
+def log_order(product, qty, customer_name, phone, chat_id):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    commands_sheet.append_row([timestamp, product, customer_name, phone, "ORDER THAR"])
+    commands_sheet.append_row([timestamp, product, qty, customer_name, phone, str(chat_id), "ORDER THAR"])
 
 def create_prompt(user_text, stock_data):
     stock_detail = "\n".join([
@@ -88,16 +88,59 @@ Customer message: {user_text}
 
 Reply in natural Mizo:
 """
+
 def process_message(chat_id, text):
     # Hei hi background ah a kal ang
     try:
-        # Greeting – Gemini call hma in, fix sa
+        # Greeting - Gemini call hma in, fix sa
         is_greeting = text.lower().strip() in ['/start', 'hi', 'hello', 'chibai']
         if is_greeting:
             send_telegram(chat_id, "Chibai! Ka hming chu Tesra. Eng tin nge ka puih theih ang che?")
             return
 
         stock_data = get_stock()
+
+        # --- ORDER FLOW START ---
+        user_lower = text.lower()
+        
+        # Step 1: "kalo duh ang" + product detect
+        for item in stock_data:
+            product = item.get('Product', '')
+            price = item.get('Man', 0)
+            stock = int(item.get('Stock', 0))
+
+            if product.lower() in user_lower and any(word in user_lower for word in ['kalo duh', 'ka duh', 'lei ka duh', 'ka la duh']) and stock > 0:
+                reply = f"Awle, {product} pakhat Rs.{price} a ni ang. Order confirm turin i hming leh phone number min lo thawn la."
+                send_telegram(chat_id, reply)
+                return
+
+        # Step 2: Phone number detect - 10 digit India
+        phone_match = re.search(r'\b\d{10}\b', text)
+        if phone_match:
+            phone = phone_match.group()
+            # Hming lak chhuah
+            name = text.replace(phone, '').replace('ka hming', '').replace('hming', '').strip()
+            if not name: name = "Customer"
+
+            # Tunah hian product eng ber nge an order kha session ah kan dah lo. 
+            # Test nan: message ah product a tel chuan hmang ang
+            ordered_product = None
+            for item in stock_data:
+                if item.get('Product','').lower() in user_lower:
+                    ordered_product = item.get('Product')
+                    break
+            
+            if not ordered_product:
+                send_telegram(chat_id, "I order duh product kha min lo sawi chiang leh la. Entirnan: Sana, Sterling 9876543210")
+                return
+
+            log_order(ordered_product, 1, name, phone, chat_id)
+            update_stock(ordered_product, 1)
+            reply = f"Awle {name}, i order kan lo la fel e. {ordered_product} kan lo pack ang. Phone: {phone}. Kan lo call ang che."
+            send_telegram(chat_id, reply)
+            return
+        # --- ORDER FLOW TAWP ---
+
         prompt = create_prompt(text, stock_data)
         reply = model.generate_content(prompt).text
 
@@ -112,20 +155,11 @@ def process_message(chat_id, text):
         # Gemini Mizo tisual fix
         reply = reply.replace("ih theih", "ka puih theih")
         reply = reply.replace("ihtheih", "ka puih theih")
-        # Chibai spam – greeting lo ah chuan paih
-        reply = reply.replace("Chibai!", "").strip()
+        # Chibai spam - greeting lo ah chuan paih
+        if not is_greeting:
+            reply = reply.replace("Chibai!", "").strip()
         reply = " ".join(reply.split())
-        # ==============================
-
-        # Order detect: hming + phone number a awm chuan
-        if "phone" in text.lower() or any(char.isdigit() for char in text):
-            phone_match = re.search(r'\d{10}', text)
-            if phone_match:
-                for item in stock_data:
-                    if item.get('Product', '').lower() in text.lower() and int(item.get('Stock', 0)) > 0:
-                        update_stock(item['Product'], int(item['Stock']) - 1)
-                        log_order(item['Product'], "Customer", phone_match.group())
-                        break
+        # ================================
 
         send_telegram(chat_id, reply)
     except Exception as e:
@@ -145,7 +179,7 @@ def webhook():
 @app.route("/")
 def home():
     return "Tesra Bot Running with Google Sheets"
-    
+
 @app.route("/debug")
 def debug():
     try:
